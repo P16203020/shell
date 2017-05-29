@@ -11,6 +11,7 @@
 #include <time.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "bison.tab.h"
 
 extern char *xmalloc PARAMS((size_t));
 
@@ -42,7 +43,7 @@ COMMAND commands[] = {
   { "list", com_list, "List files in DIR" },
   { "ls", com_list, "Synonym for `list'" },
   { "pwd", com_pwd, "Print the current working directory" },
-  { "quit", com_quit, "Quit using Fileman" },
+  { "quit", com_quit, "Quit using MyShell" },
   { "rename", com_rename, "Rename FILE to NEWNAME" },
   { "stat", com_stat, "Print out statistics on FILE" },
   { "view", com_view, "View the contents of FILE" },
@@ -83,7 +84,7 @@ main (argc, argv)
   /* Loop reading and executing lines until the user quits. */
   for ( ; done == 0; )
     {
-      line = readline ("FileMan: ");
+      line = readline ("MyShell: ");
 
       if (!line)
         break;
@@ -92,11 +93,14 @@ main (argc, argv)
          Then, if there is anything left, add it to the history list
          and execute it. */
       s = stripwhite (line);
-
+	
       if (*s)
         {
+	  
+	  yy_scan_string(s);
+	  yyparse();
           add_history (s);
-          execute_line (s);
+ //         execute_line (s);
         }
 
       free (line);
@@ -129,7 +133,7 @@ execute_line (line)
 
   if (!command)
     {
-      fprintf (stderr, "%s: No such command for FileMan.\n", word);
+      fprintf (stderr, "%s: No such command for MyShell.\n", word);
       return (-1);
     }
 
@@ -195,7 +199,7 @@ char **fileman_completion PARAMS((const char *, int, int));
 initialize_readline ()
 {
   /* Allow conditional parsing of the ~/.inputrc file. */
-  rl_readline_name = "FileMan";
+  rl_readline_name = "MyShell";
 
   /* Tell the completer that we want a crack first. */
   rl_attempted_completion_function = fileman_completion;
