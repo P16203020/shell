@@ -1,56 +1,55 @@
 %{
 	#include <stdio.h>
+	#include "global.h"
 	void yyerror (char const *);
 	int yylex( void );
 	#define YYDEBUG 1
 	#define YYERROR_VERBOSE 1
-
 %}
 
 %union {
     char *str;   
 }
 
-%token INPUT
+%token INPUT	
 %token OUTPUT
 %token PIPE
-//%token STRING
 %right BACKGROUND
-%token EOL
-
+%token PAR
 %token <string> STRING
 
 %%
 
 line :
-     |cmd { if(YYDEBUG) { printf ("execute cmd done\n");} }
+     |cmd { execute(); if(YYDEBUG) { printf ("execute cmd done\n");} }
 ;
 
 cmd: exec_cmd
-     |exec_cmd BACKGROUND { if(YYDEBUG) { printf ("BACKGROUND\n");} }
+     |exec_cmd BACKGROUND { background(); if(YYDEBUG) { printf ("BACKGROUND\n");} }
 ;
 
-exec_cmd:simple_cmd pile_re input_re output_re
+exec_cmd:simple_cmd input_re pipe_re output_re
 ;
 
-simple_cmd: STRING args { if(YYDEBUG) {printf ("simple_cmd:%s\n",yylval.str);} }
+pipe_re:/* empty */  
+	| pipe_re PIPE simple_cmd { pipe_cmd(); if(YYDEBUG) { printf ("pipe_re\n");} }
 ;
+
+input_re: /* empty */  
+	| input_re INPUT STRING { input_cmd(); if(YYDEBUG) { printf ("input_re\n");} }
+;
+
+output_re: /* empty */ 
+	| output_re OUTPUT STRING  { output_cmd(); if(YYDEBUG) { printf ("output_re\n");} }
+;
+
+simple_cmd: STRING args { simple_cmd(); if(YYDEBUG) { printf ("simple_cmd\n");} }
+;	
 
 args : /* empty */
 	| args STRING
 ;
 
-pile_re:/* empty */
-	| pile_re PIPE STRING { if(YYDEBUG) {printf ("pile_re:%s\n",yylval.str);} }
-;
-
-input_re: /* empty */
-	| input_re INPUT STRING { if(YYDEBUG) {printf ("input_re:%s\n",yylval.str);} }
-;
-
-output_re: /* empty */
-	| output_re OUTPUT STRING { if(YYDEBUG) {printf ("output_re:%s\n",yylval.str);} }
-;
 %%
 
 void yyerror (char const *s )
