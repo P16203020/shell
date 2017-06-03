@@ -13,32 +13,183 @@
 
 #define MAX_CMD 10
 
+#define JOB_RUNNING 	1
+#define JOB_STOPPED	2
+
 typedef struct {
   char args[10][128];
   char input[128];
   char output[128];
   int args_count;
-  int is_bg;
 } COMMAND;
 
+typedef struct {
+  int pid;
+  int state;
+  char args[10][128];
+  int args_count;
+} JOB;
 
 COMMAND g_cmd[MAX_CMD];
+JOB g_job[MAX_CMD];
+
 int current_cmd_index=0;
+int current_job_index=0;
 int is_simple_cmd=0;
+int is_bg=0;
+int now_pid=-1;
+
 //int pipe_fd[MAX_CMD][2];
 int pipe_fd[MAX_CMD][2];
 void background(void)
 {
-  	
+  is_bg=1;	
 }
 
+int add_jobs(int pid,int state,int cmd_index)
+{
+	g_job[current_job_index].pid=pid;
+	g_job[current_job_index].state=state;
+	memcpy(g_job[current_job_index].args,g_cmd[cmd_index].args,sizeof(g_cmd[cmd_index].args));
+	g_job[current_job_index].args_count=g_cmd[cmd_index].args_count;
+	current_job_index++;
+	
+	return 0;
+}
+
+int dump_jobs(void)
+{
+	int i=0;
+	int j=0;
+	printf("PID\t\tSTATE\t\tCMD\n");
+	for(i=0;i<current_job_index;i++)
+	{
+		if(g_job[i].state==1) 
+		{
+		 	printf("%d\t\t%s\t\t",g_job[i].pid, "running");
+	
+			for(j=0;j<g_job[i].args_count;j++)
+				printf("%s ",g_job[i].args[j]);
+			printf("&\n");
+		}
+		else if(g_job[i].state==2) 
+		{
+		 	printf("%d\t\t%s\t\t",g_job[i].pid, "stopped");
+			for(j=0;j<g_job[i].args_count;j++)
+				printf("%s ",g_job[i].args[j]);
+			printf("&\n");
+		}
+	}
+	   	
+}
+
+int find_top_job_pid(int *index)
+{
+	int i=0;
+	for(i=0;i<current_job_index;i++)
+	{
+		if(g_job[i].state!=0) 
+		{
+			*index=i;
+			return g_job[i].pid;
+		}
+	}
+	return -1;
+}
+
+int find_index_by_job_pid(int pid)
+{
+	int i=0;
+	for(i=0;i<current_job_index;i++)
+	{
+		if(g_job[i].state!=0) 
+		{
+			if(g_job[i].pid==pid)
+				return i;
+		}
+	}
+
+}
+int fg_cmd(int pid)
+{
+	if(pid==0)
+	{
+		int index=0;
+		int pid_find=find_top_job_pid(&index);
+		if(pid_find!=-1)
+		{
+			kill(pid_find,SIGCONT);
+			g_job[index].state=0;
+			is_bg=0;
+			now_pid=pid_find;
+			while(!is_bg)
+			{
+				if(waitpid(pid_find, NULL, WNOHANG)>0) break;
+			}	
+			now_pid=-1;
+		}
+	}
+	else 
+	{
+	   int index=find_index_by_job_pid(pid);
+	   kill(pid,SIGCONT);
+	   g_job[index].state=0;
+	   now_pid=pid;
+	   waitpid(pid, NULL, 0);	   
+	}
+	return 0;
+}
+
+int bg_cmd(int pid)
+{
+	if(pid==0)
+	{
+		int index=0;
+		int pid=find_top_job_pid(&index);
+		if(pid!=-1)
+		{
+			kill(pid,SIGCONT);
+			g_job[index].state=JOB_RUNNING;
+		}
+	}
+	else 
+	{
+	   int index=find_index_by_job_pid(pid);
+	   kill(pid,SIGCONT);
+	   g_job[index].state=JOB_RUNNING;	   
+	}
+	return 0;
+}
+
+
+
+void CTRL_Z_DEAL()
+{
+	if(now_pid!=-1)
+	{
+	  add_jobs(now_pid,JOB_STOPPED,0);
+	  kill(now_pid,SIGSTOP);
+	  is_bg=1;
+	  now_pid=-1;
+	}
+}
+
+void CTRL_C_DEAL()
+{
+	if(now_pid!=-1)
+	{
+	  kill(now_pid,SIGQUIT);
+	  now_pid=-1;
+	}
+}
 
 int execue_init()
 {
   memset(g_cmd,0,sizeof(g_cmd));
   current_cmd_index=0;
   is_simple_cmd=-1;
-
+  is_bg=0;
+  now_pid=-1;
 }
 
 
@@ -130,14 +281,15 @@ void dump(void)
 	if(g_cmd[i].output[0]=='\0') 
 	{
 		 if(i==current_cmd_index-1)
-		 	printf("OUTPUT:stdout");
+		 	printf("OUTPUT:stdout,");
 		 else
-		 	printf("OUTPUT:pipe");			
+		 	printf("OUTPUT:pipe,");			
 	}
 	else
 	{
-		printf("OUTPUT:%s",g_cmd[i].output);
+		printf("OUTPUT:%s,",g_cmd[i].output);
 	}
+	printf("is_bg=%d",is_bg);
 	printf("\n");
   }
   printf("##############DUMP END#########\n");
@@ -241,13 +393,62 @@ void run_cmd(int i,int cmd_amount)
 }
 
 
-int execute(void)
+int execute(void)		
 {
   int cmd_amount=current_cmd_index;
   printf("execute,cmd_amount=%d\n",cmd_amount);
   dump();
   int i=0;  
   int j=0;
+  if(cmd_amount==1)
+  {
+	if(strcmp(g_cmd[0].args[0],"jobs")==0)
+	{
+		dump_jobs();		
+		return 0;
+	}
+	else if(strcmp(g_cmd[0].args[0],"fg")==0)
+	{
+		if(g_cmd[0].args_count==1)
+		{
+			fg_cmd(0);
+			return 0;
+		}
+		else if(g_cmd[0].args[1][0]!='%' && g_cmd[0].args_count==3)
+		{
+			fg_cmd(atoi(g_cmd[0].args[2]));
+			return 0;
+		}
+		else
+		{
+			printf("usage:fg;fg %% <pid>\n");
+			return 0;
+		}
+			
+	}
+	else if(strcmp(g_cmd[0].args[0],"bg")==0)
+	{
+		if(g_cmd[0].args_count==1)
+		{
+			bg_cmd(0);
+			return 0;
+		}
+		else if(g_cmd[0].args[1][0]!='%' && g_cmd[0].args_count==3)
+		{
+			bg_cmd(atoi(g_cmd[0].args[2]));
+			return 0;
+		}
+		else
+		{
+			printf("usage:bg;bg %% <pid>\n");
+			return 0;
+		}
+	}
+	else if(strcmp(g_cmd[0].args[0],"quit")==0)
+	{
+		exit(0);
+	}
+  }
   int pid=fork();
   if(pid==0) //child process
   {
@@ -258,7 +459,19 @@ int execute(void)
   }
   else
   {	
-	waitpid(pid, NULL, 0);
+	if(!is_bg)
+	{
+		now_pid=pid;
+		while(!is_bg)
+		{
+			if(waitpid(pid, NULL, WNOHANG)>0) break;
+		}	
+		now_pid=-1;
+	}	
+	else
+	{
+		add_jobs(pid,JOB_RUNNING,0);
+	}
 //	printf("execute pid=%d down\n",pid);
    } 
 

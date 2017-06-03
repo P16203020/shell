@@ -8,13 +8,17 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <stddef.h>
+#include <sys/wait.h>
+#include <sys/ioctl.h>
+#include <sys/termios.h>
 #include <time.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "bison.tab.h"
-
+#include "global.h"
 extern void yy_scan_string(char *s); 
-extern void execue_init();
 int done=0;
 
 /* Strip whitespace from the start and end of STRING.  Return a pointer
@@ -54,6 +58,8 @@ int main (int argc, char **argv)
 {
   char *line, *s;
   initialize_readline ();	/* Bind our completer. */
+  signal(SIGTSTP, CTRL_Z_DEAL);
+  signal(SIGINT, CTRL_C_DEAL);
   /* Loop reading and executing execue_initlines until the user quits. */
   for ( ; done==0; )
     {
