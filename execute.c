@@ -10,6 +10,8 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <sys/termios.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #define MAX_CMD 10
 
@@ -444,6 +446,16 @@ int execute(void)
 			return 0;
 		}
 	}
+	else if(strcmp(g_cmd[0].args[0],"history")==0)
+	{
+		register HIST_ENTRY **the_list;
+         	register int i;
+         	the_list = history_list ();
+          	if (the_list)
+            		for (i = 0; the_list[i]; i++)
+              			printf ("%d: %s\n", i + history_base, the_list[i]->line);
+		return 0;
+	}	
 	else if(strcmp(g_cmd[0].args[0],"quit")==0)
 	{
 		exit(0);

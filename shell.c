@@ -58,6 +58,7 @@ int main (int argc, char **argv)
 {
   char *line, *s;
   initialize_readline ();	/* Bind our completer. */
+  read_history(NULL);
   signal(SIGTSTP, CTRL_Z_DEAL);
   signal(SIGINT, CTRL_C_DEAL);
   /* Loop reading and executing execue_initlines until the user quits. */
@@ -79,6 +80,7 @@ int main (int argc, char **argv)
 			yy_scan_string(s);
 			yyparse();
 			add_history(s);
+			write_history(NULL);
       }
       free (line);
     }
