@@ -64,7 +64,16 @@ int main (int argc, char **argv)
   /* Loop reading and executing execue_initlines until the user quits. */
   for ( ; done==0; )
     {
-      line = readline ("MyShell: ");
+ 	char dir[1024], *s;
+	s = getcwd (dir, sizeof(dir) - 1);
+	if(s)
+	{
+		char dir_path[1024];
+		sprintf(dir_path,"MyShell@%s:",dir);
+		line = readline (dir_path);
+	}
+	else
+      		line = readline ("MyShell: ");
 
       if (!line)
         break;

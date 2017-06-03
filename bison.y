@@ -3,8 +3,6 @@
 	#include "global.h"
 	void yyerror (char const *);
 	int yylex( void );
-	#define YYDEBUG 1
-	#define YYERROR_VERBOSE 1
 %}
 
 %union {

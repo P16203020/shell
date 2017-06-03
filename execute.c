@@ -43,6 +43,35 @@ int now_pid=-1;
 
 //int pipe_fd[MAX_CMD][2];
 int pipe_fd[MAX_CMD][2];
+
+int com_pwd(char *ignore)
+{
+  char dir[1024], *s;
+
+  s = getcwd (dir, sizeof(dir) - 1);
+  if (s == 0)
+    {
+      printf ("Error getting pwd: %s\n", dir);
+      return 1;
+    }
+
+  printf ("Current directory is %s\n", dir);
+  return 0;
+}
+
+int com_cd(char *arg)
+{
+  if (chdir (arg) == -1)
+    {
+      perror (arg);
+      return 1;
+    }
+
+  com_pwd ("");
+  return 0;
+}
+
+
 void background(void)
 {
   is_bg=1;	
@@ -197,7 +226,7 @@ int execue_init()
 
 void add_args(char *s)
 {
-   printf("add_args\n");
+//   printf("add_args\n");
    int current_args_index=g_cmd[current_cmd_index].args_count;
    strcpy(g_cmd[current_cmd_index].args[current_args_index],s);	
    free(s);	
@@ -398,7 +427,7 @@ void run_cmd(int i,int cmd_amount)
 int execute(void)		
 {
   int cmd_amount=current_cmd_index;
-  printf("execute,cmd_amount=%d\n",cmd_amount);
+//  printf("execute,cmd_amount=%d\n",cmd_amount);
   dump();
   int i=0;  
   int j=0;
@@ -455,8 +484,16 @@ int execute(void)
             		for (i = 0; the_list[i]; i++)
               			printf ("%d: %s\n", i + history_base, the_list[i]->line);
 		return 0;
+	}
+	else if(strcmp(g_cmd[0].args[0],"cd")==0)
+	{
+		if(g_cmd[0].args_count==2)
+		{
+			com_cd(g_cmd[0].args[1]);
+		}
+		return 0;
 	}	
-	else if(strcmp(g_cmd[0].args[0],"quit")==0)
+	else if( (strcmp(g_cmd[0].args[0],"quit")==0) || (strcmp(g_cmd[0].args[0],"exit")==0) || (strcmp(g_cmd[0].args[0],"q")==0) )
 	{
 		exit(0);
 	}

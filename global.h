@@ -1,5 +1,7 @@
 #ifndef __GLOBAL__
 #define __GLOBAL__
+#define YYDEBUG 0
+#define YYERROR_VERBOSE 0
 extern void execue_init();
 extern void add_args(char *s);
 extern int simple_cmd();
