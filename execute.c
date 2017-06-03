@@ -349,7 +349,7 @@ int execute_cmd(int i)
 		{
 			memset(tmp,0,1024);
 			sprintf(tmp,"%s/%s",env_data[j],g_cmd[i].args[0]);
-			printf("tmp:%s\n",tmp);
+//			printf("tmp:%s\n",tmp);
 			if(access(tmp,F_OK)==0)
 			{	
 				memcpy(g_cmd[i].args[0],tmp,sizeof(g_cmd[i].args[0]));

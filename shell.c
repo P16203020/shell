@@ -61,6 +61,7 @@ void read_env(void)
   char tmp[1024];
   memset(tmp,0,1024);
   int i=0;
+  printf("get env path:\n");
   FILE *fp=fopen("env.conf","r");
   if(fp)
   {
@@ -68,11 +69,15 @@ void read_env(void)
 	fclose(fp);
 	char *token=strtok(tmp,":");
 	while(token!=NULL){
-//		printf("%s\n",token);
-		if(i<5)
+		if(i<5 && *token!='\n')
+		{
+			
+			printf("%d:%s\n",i,token);
 			strcpy(env_data[i],token);
-		i++;
-		env_count++;
+			i++;
+			env_count++;
+		}
+
 		token=strtok(NULL,":");
 	}
 		
