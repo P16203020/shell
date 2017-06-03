@@ -12,6 +12,7 @@
 #include <sys/termios.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "global.h"
 
 #define MAX_CMD 10
 
@@ -214,7 +215,7 @@ void CTRL_C_DEAL()
 	}
 }
 
-int execue_init()
+void execue_init()
 {
   memset(g_cmd,0,sizeof(g_cmd));
   current_cmd_index=0;
@@ -338,7 +339,25 @@ int execute_cmd(int i)
 //	for(j = 0; j<g_cmd[i].args_count+1; j++)
 //		printf("argv[%d]=%s,",j,argv[j]);
 //	printf("\n");
-//	printf("execute_cmd before\n");
+	
+	char tmp[1024];
+	memset(tmp,0,1024);
+	sprintf(tmp,"%s/%s",dir_path,g_cmd[i].args[0]);
+	if(access(tmp,F_OK)!=0)
+	{
+		for(j=0;j<env_count;j++)
+		{
+			memset(tmp,0,1024);
+			sprintf(tmp,"%s/%s",env_data[j],g_cmd[i].args[0]);
+			printf("tmp:%s\n",tmp);
+			if(access(tmp,F_OK)==0)
+			{	
+				memcpy(g_cmd[i].args[0],tmp,sizeof(g_cmd[i].args[0]));
+				break;
+			}
+		}
+	}
+
 	if(execvp(g_cmd[i].args[0],argv)<0)
 	{
 		printf("execv error\n");
@@ -350,7 +369,7 @@ int execute_cmd(int i)
 	return 0;
 }
 
-void run_cmd(int i,int cmd_amount)
+int run_cmd(int i,int cmd_amount)
 {
 	int pid;
 	FILE *input_fp=NULL;
@@ -361,7 +380,7 @@ void run_cmd(int i,int cmd_amount)
 		pid=fork();
 		if(pid==0) //child
 		{
-			run_cmd(i-1,cmd_amount);
+			if(run_cmd(i-1,cmd_amount)==-1) return -1;
 		}
 		else
 		{
@@ -418,7 +437,7 @@ void run_cmd(int i,int cmd_amount)
 	    }	
 	}
 
-	execute_cmd(i);
+	if(execute_cmd(i)==-1) return -1;
 	if(input_fp) fclose(input_fp);
 	if(output_fp) fclose(output_fp);
 }

@@ -20,7 +20,9 @@
 #include "global.h"
 extern void yy_scan_string(char *s); 
 int done=0;
-
+char env_data[5][256];
+char dir_path[1024];
+int env_count=0;
 /* Strip whitespace from the start and end of STRING.  Return a pointer
    into STRING. */
 char * stripwhite (char *string)
@@ -53,12 +55,35 @@ void initialize_readline (void)
   rl_attempted_completion_function = NULL;
 }
 
-
+void read_env(void)
+{
+  memset(env_data,0,sizeof(env_data));
+  char tmp[1024];
+  memset(tmp,0,1024);
+  int i=0;
+  FILE *fp=fopen("env.conf","r");
+  if(fp)
+  {
+	fread(tmp,1,sizeof(tmp),fp);
+	fclose(fp);
+	char *token=strtok(tmp,":");
+	while(token!=NULL){
+//		printf("%s\n",token);
+		if(i<5)
+			strcpy(env_data[i],token);
+		i++;
+		env_count++;
+		token=strtok(NULL,":");
+	}
+		
+  }
+}
 int main (int argc, char **argv)
 {
   char *line, *s;
   initialize_readline ();	/* Bind our completer. */
   read_history(NULL);
+  read_env();
   signal(SIGTSTP, CTRL_Z_DEAL);
   signal(SIGINT, CTRL_C_DEAL);
   /* Loop reading and executing execue_initlines until the user quits. */
@@ -68,7 +93,7 @@ int main (int argc, char **argv)
 	s = getcwd (dir, sizeof(dir) - 1);
 	if(s)
 	{
-		char dir_path[1024];
+		memset(dir_path,0,1024);
 		sprintf(dir_path,"MyShell@%s:",dir);
 		line = readline (dir_path);
 	}
