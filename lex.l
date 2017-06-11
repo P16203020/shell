@@ -8,6 +8,6 @@
 ">" {return OUTPUT;}
 "|" {return PIPE;}
 "&" {return BACKGROUND;}
-[^<>|&\t\r ]+ {yylval.str=strdup(yytext); if(YYDEBUG) printf("yylval.str=%s\n",yylval.str); add_args(yylval.str); return STRING;}
+[^<>|&\t\r ]+ {yylval.string=strdup(yytext); if(YYDEBUG) printf("yylval.str=%s\n",yylval.string); add_args(yylval.string); return STRING;}
 .    { }
 %%

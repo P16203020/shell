@@ -38,7 +38,6 @@ JOB g_job[MAX_CMD];
 
 int current_cmd_index=0;
 int current_job_index=0;
-int is_simple_cmd=0;
 int is_bg=0;
 int now_pid=-1;
 
@@ -219,7 +218,6 @@ void execue_init()
 {
   memset(g_cmd,0,sizeof(g_cmd));
   current_cmd_index=0;
-  is_simple_cmd=-1;
   is_bg=0;
   now_pid=-1;
 }
@@ -236,7 +234,6 @@ void add_args(char *s)
 
 int simple_cmd()
 {
-	is_simple_cmd=1;
 	current_cmd_index++;	
 }
 
@@ -247,42 +244,15 @@ int pipe_cmd()
 
 int input_cmd()
 {
- 
-   if(is_simple_cmd==1)
-   {
-	   strcpy(g_cmd[current_cmd_index-1].input,g_cmd[current_cmd_index].args[0]);
-	   memset(&g_cmd[current_cmd_index],0,sizeof(g_cmd[current_cmd_index]));
-//	   current_cmd_index--;
-   }
-   else if(is_simple_cmd==0)
-   {
-   	  int current_args_index=g_cmd[current_cmd_index].args_count;
-  	  strcpy(g_cmd[current_cmd_index].input,g_cmd[current_cmd_index].args[current_args_index-1]);	
-	  memset(g_cmd[current_cmd_index].args[current_args_index-1],0,sizeof(g_cmd[current_cmd_index].args[current_args_index-1]));	
-	  g_cmd[current_cmd_index].args_count--;
-   }
-   is_simple_cmd=0;
+   strcpy(g_cmd[current_cmd_index-1].input,g_cmd[current_cmd_index].args[0]);
+   memset(&g_cmd[current_cmd_index],0,sizeof(g_cmd[current_cmd_index]));
    return 0;
 }
 
 int output_cmd()
 {
-
-   if(is_simple_cmd==1)
-   {
-	   strcpy(g_cmd[current_cmd_index-1].output,g_cmd[current_cmd_index].args[0]);
-	   memset(&g_cmd[current_cmd_index],0,sizeof(g_cmd[current_cmd_index]));
-//	   current_cmd_index--;
-   }
-   else if(is_simple_cmd==0)
-   {
-
-   	  int current_args_index=g_cmd[current_cmd_index].args_count;
-  	  strcpy(g_cmd[current_cmd_index].output,g_cmd[current_cmd_index].args[current_args_index-1]);	
-	  memset(g_cmd[current_cmd_index].args[current_args_index-1],0,sizeof(g_cmd[current_cmd_index].args[current_args_index-1]));
-	  g_cmd[current_cmd_index].args_count--;			
-   }
-  is_simple_cmd=0;
+   strcpy(g_cmd[current_cmd_index-1].output,g_cmd[current_cmd_index].args[0]);
+   memset(&g_cmd[current_cmd_index],0,sizeof(g_cmd[current_cmd_index]));
    return 0;
 }
 
@@ -464,7 +434,7 @@ int execute(void)
 			fg_cmd(0);
 			return 0;
 		}
-		else if(g_cmd[0].args[1][0]!='%' && g_cmd[0].args_count==3)
+		else if(strcmp(g_cmd[0].args[1],"%")==0 && g_cmd[0].args_count==3)
 		{
 			fg_cmd(atoi(g_cmd[0].args[2]));
 			return 0;
@@ -483,7 +453,7 @@ int execute(void)
 			bg_cmd(0);
 			return 0;
 		}
-		else if(g_cmd[0].args[1][0]!='%' && g_cmd[0].args_count==3)
+		else if(strcmp(g_cmd[0].args[1],"%")==0 && g_cmd[0].args_count==3)
 		{
 			bg_cmd(atoi(g_cmd[0].args[2]));
 			return 0;

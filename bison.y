@@ -6,14 +6,13 @@
 %}
 
 %union {
-    char *str;   
+    char *string;   
 }
 
-%token INPUT	
-%token OUTPUT
-%token PIPE
-%right BACKGROUND
-%token PAR
+%token INPUT  // <	
+%token OUTPUT // >
+%token PIPE // |
+%right BACKGROUND // &
 %token <string> STRING
 
 %%
