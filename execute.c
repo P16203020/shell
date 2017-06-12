@@ -13,11 +13,13 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "global.h"
+#include "bison.tab.h"
 
 #define MAX_CMD 10
 
 #define JOB_RUNNING 	1
 #define JOB_STOPPED	2
+extern void yy_scan_string(char *s); 
 
 typedef struct {
   char args[10][128];
@@ -230,6 +232,13 @@ void add_args(char *s)
    strcpy(g_cmd[current_cmd_index].args[current_args_index],s);	
    free(s);	
    g_cmd[current_cmd_index].args_count++;		
+}
+
+void add_args_local(char *s)
+{
+   int current_args_index=g_cmd[current_cmd_index].args_count;
+   strcpy(g_cmd[current_cmd_index].args[current_args_index],s);	
+   g_cmd[current_cmd_index].args_count++;
 }
 
 int simple_cmd()
@@ -515,3 +524,99 @@ int execute(void)
 
 }
 
+int found_val_index_by_name(int var_total,char *name)
+{
+
+}
+
+int exec_srcipt(char *path)
+{
+	char buf[256];
+	char var_val[10][128];
+	char var_name[10][128];	
+	char value[128];
+	memset(buf,0,sizeof(buf));
+	memset(var_val,0,sizeof(var_val));
+	memset(var_name,0,sizeof(var_name));	
+	memset(value,0,sizeof(value));
+	char *p_start=NULL;
+	char *p_end=NULL;
+	char cmd_buf[256];
+	memset(cmd_buf,0,256);
+	int var_index=0;
+	FILE *fp=fopen(path,"r");
+	if(fp==NULL)
+	{
+		return -1;
+	}
+	if(fgets(buf,sizeof(buf),fp)==NULL)
+	{
+		fclose(fp);
+		return -1;
+	}
+	while(fgets(buf,sizeof(buf),fp)!=NULL)
+	{			
+//		printf("buf=%s\n",buf);
+		if(strstr(buf,"=\"")!=NULL)    //found val=""
+		{
+			p_start=strstr(buf,"=\"");
+			strcpy(var_val[var_index],p_start+1);
+			memcpy(var_name[var_index],buf,p_start-buf);
+//			printf("var_name=%s,var_val=%s\n",var_name[var_index],var_val[var_index]);
+			var_index++;
+		}
+		else if(strstr(buf,"$")!=NULL)   //found $
+		{
+			p_start=strstr(buf,"$");
+			if(p_start)
+			{
+				p_end=strstr(p_start+1," ");
+				if(p_end)
+				{
+					memcpy(value,p_start+1,p_end-p_start-1);
+				}
+				else
+				{
+					memcpy(value,p_start+1,strlen(buf)-(p_start-buf)-2);
+				}
+//				printf("value=%s,strlen=%d\n",value,strlen(value));
+				int i=0;
+				for(i=0;i<var_index;i++)
+				{	
+					if(strcmp(var_name[i],value)==0) //found
+					{
+						execue_init();
+						memset(cmd_buf,0,256);
+						memcpy(cmd_buf,buf,p_start-buf-1);
+						//printf("cmd_buf=%s\n",cmd_buf);
+						add_args_local(cmd_buf);
+						memset(cmd_buf,0,256);
+						memcpy(cmd_buf,var_val[i],strlen(var_val[i])+1);
+						//printf("cmd_buf=%s\n",cmd_buf);
+						add_args_local(cmd_buf);
+						int pid=fork();
+						if(pid==0)
+						{
+							execute_cmd(0);
+							break;
+						}
+						else
+						{
+							waitpid(pid, NULL, 0);
+						 	break;
+						}						
+						break;
+					}
+				}			
+			}	
+		}
+		else
+		{
+			execue_init();
+			yy_scan_string(buf);
+			yyparse();
+		}
+		memset(buf,0,sizeof(buf));
+	}
+	fclose(fp);
+}

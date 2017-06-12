@@ -83,9 +83,23 @@ void read_env(void)
 		
   }
 }
+
+int check_if_script(int argc,char **argv)
+{
+	if(argc==2 && strstr(argv[1],".sh")!=NULL)
+	{
+		return 0;
+	}
+	return 1;
+}
 int main (int argc, char **argv)
 {
   char *line, *s;
+  if(check_if_script(argc,argv)==0) //found script
+  {
+	exec_srcipt(argv[1]);
+	return 0;
+  }
   initialize_readline ();	/* Bind our completer. */
   read_history(NULL);
   read_env();
